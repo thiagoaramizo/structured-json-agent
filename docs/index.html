@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Structured JSON Agent - Type-Safe AI Agents</title>
+    <meta name="description" content="A typed and extensible TypeScript library for creating and running Iterative AI Agents that guarantee structured JSON output.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --bg-color: #0f172a;
+            --text-color: #e2e8f0;
+            --code-bg: #1e293b;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .badges {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        h2 {
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            margin-top: 2rem;
+            font-size: 1.4rem;
+            color: #cbd5e1;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background-color: #1e293b;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .feature-card h3 {
+            margin-top: 0;
+            color: #60a5fa;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+            text-decoration: none;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            margin-top: 1rem;
+        }
+        
+        .github-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Structured JSON Agent</h1>
+            <p class="subtitle">A typed and extensible TypeScript library for creating and running Iterative AI Agents that guarantee structured JSON output.</p>
+            <a href="https://www.npmjs.com/package/structured-json-agent" target="_blank"> 
+                <div class="badges">
+                    <img src="https://img.shields.io/npm/v/structured-json-agent" alt="NPM Version">
+                    <img src="https://img.shields.io/npm/l/structured-json-agent" alt="License">
+                    <img src="https://img.shields.io/badge/TypeScript-Ready-blue" alt="TypeScript">
+                </div>
+            </a>
+            <a href="https://github.com/thiagoaramizo/structured-json-agent" class="btn" target="_blank">View on GitHub</a>
+        </header>
+
+        <section id="installation">
+            <h2>Installation</h2>
+            <p>To install the library, run:</p>
+            <pre><code class="language-bash">npm install structured-json-agent</code></pre>
+            <p>You need a Node.js version that supports ES modules. The library is tested with Node.js 18 and above.</p>
+        </section>
+
+        <section id="dependencies">
+            <h2>Dependencies</h2>
+
+            <p>To create a schema, you need to install <a href="https://www.npmjs.com/package/zod" target="_blank">zod</a>:</p>
+            <pre><code class="language-bash">npm install zod</code></pre>
+
+            <p>You need inject a LLM service instance to the agent. You can use <a href="https://www.npmjs.com/package/openai" target="_blank">openai</a>, <a href="https://www.npmjs.com/package/@anthropic-ai/sdk" target="_blank">@anthropic-ai/sdk</a>, or <a href="https://www.npmjs.com/package/@google/genai" target="_blank">@google/genai</a>. Each package has its own installation instructions.</p>
+
+            <p><em>Note: The OpenAI instance can work with others providers, like Deepseek, you can use it by passing the url while initializing the instance.</em></p>
+
+            <p>The lib provides an adapter for each provider (OpenAI, Anthropic, Google Gemini). You can implement your own LLM service by following the interface <code>LLMService</code> from the library.</p>
+
+        </section>
+
+        <section id="usage">
+            <h2>Usage</h2>
+            <h3>1. Define your Schemas using Zod</h3>
+            <p>First, define your input and output schemas using <a href="https://www.npmjs.com/package/zod" target="_blank">zod</a>. These schemas will guide the structure of the JSON output.</p>
+            <p>For example:</p>
+            <pre><code class="language-typescript">import { z } from "zod";
+
+// Input Schema
+const inputSchema = z.object({
+  topic: z.string(),
+  depth: z.enum(["basic", "advanced"])
+});
+
+// Output Schema
+const outputSchema = z.object({
+  title: z.string(),
+  keyPoints: z.array(z.string()),
+  summary: z.string()
+});
+</code></pre>
+
+            <h3>2. Initialize Provider Instances</h3>
+
+            <p>Next, initialize instances of the LLM services you plan to use. For example, if you're using OpenAI and Anthropic:</p>
+            <pre><code class="language-typescript">import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+
+const openAiInstance = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const anthropicInstance = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+</code></pre>
+
+
+            <h3>3. Import and Configure the Agent</h3>
+            <pre><code class="language-typescript">const inputSchema = ... // zod schema
+const outputSchema = ... // zod schema
+const openAiInstance = ... // openai instance
+const anthropicInstance = ... // anthropic instance
+
+// Initialize the Agent
+const myAgent = new StructuredAgent({
+  generator: { // Generator Configuration
+    llmService: openAiInstance,
+    model: "gpt-4o-mini",
+  },
+  reviewer: { // Reviewer Configuration, optional
+    llmService: anthropicInstance,
+    model: "claude-3-5-sonnet-20240620",
+  },
+  // Schemas & Prompt
+  inputSchema,
+  outputSchema,
+  systemPrompt: "You are an expert summarizer. Create a structured summary based on the topic.",
+});</code></pre>
+
+            <h3>4. Run the Agent</h3>
+
+            <p>To run the agent, call the <code>run()</code> method with your input data. The agent will return a promise that resolves to the parsed output schema.</p>
+
+            <pre><code>const result = await myAgent.run({
+  topic: "Clean Architecture",
+  depth: "advanced"
+});
+            </code></pre>
+
+            <p>We recommend using the agent with an async function to handle the promise resolution. The result will be typed according to your output schema.</p>
+
+
+            <pre><code class="language-typescript">async function main() {
+  try {
+    const result = await agent.run({
+      topic: "Clean Architecture",
+      depth: "advanced"
+    });
+
+    console.log("Result:", result);
+    // Result is typed as inferred from outputSchema
+  } catch (error) {
+    console.error("Agent failed:", error);
+  }
+}
+
+main();</code></pre>
+        </section>
+
+        <section id="api">
+            <h2>API Reference</h2>
+            
+            <h3>AgentConfig</h3>
+            <p>Configuration object passed to <code>new StructuredAgent(config)</code>.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>generator</code></td>
+                        <td><code>LLMConfig</code></td>
+                        <td>Configuration for the generation model.</td>
+                    </tr>
+                    <tr>
+                        <td><code>reviewer</code></td>
+                        <td><code>LLMConfig?</code></td>
+                        <td>Configuration for the reviewer model (optional).</td>
+                    </tr>
+                    <tr>
+                        <td><code>inputSchema</code></td>
+                        <td><code>ZodSchema</code></td>
+                        <td>Zod Schema for validating the input.</td>
+                    </tr>
+                    <tr>
+                        <td><code>outputSchema</code></td>
+                        <td><code>ZodSchema</code></td>
+                        <td>Zod Schema for the expected output.</td>
+                    </tr>
+                    <tr>
+                        <td><code>systemPrompt</code></td>
+                        <td><code>string</code></td>
+                        <td>Core instructions for the agent.</td>
+                    </tr>
+                    <tr>
+                        <td><code>maxIterations</code></td>
+                        <td><code>number?</code></td>
+                        <td>Max retries for correction. Default: 5.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>LLMConfig</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>llmService</code></td>
+                        <td><code>OpenAI | GoogleGenAI | Anthropic | ILLMService</code></td>
+                        <td>The provider instance or custom service.</td>
+                    </tr>
+                    <tr>
+                        <td><code>model</code></td>
+                        <td><code>string</code></td>
+                        <td>Model ID (e.g., <code>gpt-4o</code>, <code>claude-3-5-sonnet</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><code>config</code></td>
+                        <td><code>ModelConfig?</code></td>
+                        <td>Optional parameters (temperature, max_tokens, etc.).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <footer style="text-align: center; padding: 2rem 0; color: #64748b; margin-top: 3rem; border-top: 1px solid var(--border-color);">
+            <p><a href="https://github.com/thiagoaramizo/structured-json-agent" target="_blank">@thiagoaramizo</a> &copy; 2026 Structured JSON Agent. Licensed under ISC.</p>
+        </footer>
+    </div>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>
