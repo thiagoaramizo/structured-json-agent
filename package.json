@@ -29,7 +29,7 @@
   "bugs": {
     "url": "https://github.com/thiagoaramizo/structured-json-agent/issues"
   },
-  "homepage": "https://github.com/thiagoaramizo/structured-json-agent#readme",
+  "homepage": "https://thiagoaramizo.github.io/structured-json-agent",
   "author": "",
   "license": "ISC",
   "devDependencies": {
