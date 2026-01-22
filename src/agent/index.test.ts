@@ -2,6 +2,7 @@ import { StructuredAgent } from "./index.js";
 import { ILLMService, ChatMessage } from "../llm/types.js";
 import { ModelConfig } from "../types/index.js";
 import { MaxIterationsExceededError } from "../errors/index.js";
+import { z } from "zod";
 
 // Mock LLM Service Implementation
 class MockLLMService implements ILLMService {
@@ -12,11 +13,11 @@ class MockLLMService implements ILLMService {
     this.responses = responses;
   }
 
-  async complete(
-    _messages: ChatMessage[],
-    _model: string,
-    _config?: ModelConfig
-  ): Promise<string> {
+  async complete(params: {
+    messages: ChatMessage[];
+    model: string;
+    config?: ModelConfig;
+  }): Promise<string> {
     const response = this.responses[this.callCount];
     this.callCount++;
     return response || "{}";
@@ -28,29 +29,18 @@ class MockLLMService implements ILLMService {
 }
 
 describe("StructuredAgent", () => {
-  const inputSchema = {
-    type: "object",
-    properties: {
-      input: { type: "string" },
-    },
-    required: ["input"],
-  };
+  const inputSchema = z.object({
+    input: z.string(),
+  });
 
-  const outputSchema = {
-    type: "object",
-    properties: {
-      result: { type: "string" },
-    },
-    required: ["result"],
-  };
+  const outputSchema = z.object({
+    result: z.string(),
+  });
 
-  const config = {
-    openAiApiKey: "dummy-key",
-    generatorModel: "gpt-test",
-    reviewerModel: "gpt-reviewer",
+  const baseConfig = {
+    systemPrompt: "Test Prompt",
     inputSchema,
     outputSchema,
-    systemPrompt: "Test Prompt",
   };
 
   it("should return valid JSON on the first attempt", async () => {
@@ -58,8 +48,11 @@ describe("StructuredAgent", () => {
     const mockLLM = new MockLLMService([validJson]);
 
     const agent = new StructuredAgent({
-      ...config,
-      llmService: mockLLM,
+      ...baseConfig,
+      generator: {
+        llmService: mockLLM,
+        model: "gpt-test",
+      },
     });
 
     const result = await agent.run({ input: "test" });
@@ -73,8 +66,15 @@ describe("StructuredAgent", () => {
     const mockLLM = new MockLLMService([invalidJson, validJson]);
 
     const agent = new StructuredAgent({
-      ...config,
-      llmService: mockLLM,
+      ...baseConfig,
+      generator: {
+        llmService: mockLLM,
+        model: "gpt-test",
+      },
+      reviewer: {
+        llmService: mockLLM,
+        model: "gpt-reviewer",
+      },
     });
 
     const result = await agent.run({ input: "test" });
@@ -88,9 +88,16 @@ describe("StructuredAgent", () => {
     const mockLLM = new MockLLMService(Array(6).fill(invalidJson));
 
     const agent = new StructuredAgent({
-      ...config,
-      llmService: mockLLM,
+      ...baseConfig,
       maxIterations: 5,
+      generator: {
+        llmService: mockLLM,
+        model: "gpt-test",
+      },
+      reviewer: {
+        llmService: mockLLM,
+        model: "gpt-reviewer",
+      },
     });
 
     await expect(agent.run({ input: "test" })).rejects.toThrow(
@@ -105,8 +112,15 @@ describe("StructuredAgent", () => {
     const mockLLM = new MockLLMService([malformedJson, validJson]);
 
     const agent = new StructuredAgent({
-      ...config,
-      llmService: mockLLM,
+      ...baseConfig,
+      generator: {
+        llmService: mockLLM,
+        model: "gpt-test",
+      },
+      reviewer: {
+        llmService: mockLLM,
+        model: "gpt-reviewer",
+      },
     });
 
     const result = await agent.run({ input: "test" });

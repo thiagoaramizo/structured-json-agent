@@ -2,21 +2,24 @@
 
 A typed and extensible TypeScript library for creating and running Iterative AI Agents that guarantee structured JSON output.
 
-This library orchestrates a **Generator ↔ Reviewer** cycle to ensure that the output from Large Language Models (LLMs) strictly adheres to a defined JSON Schema.
+This library orchestrates a **Generator ↔ Reviewer** cycle to ensure that the output from Large Language Models (LLMs) strictly adheres to a defined Zod Schema.
 
 ## Features
 
-*   **Guaranteed JSON Output**: Enforces strict adherence to JSON Schemas (Draft-07+).
+*   **Guaranteed JSON Output**: Enforces strict adherence to Zod Schemas.
+*   **Multi-Provider Support**: Built-in adapters for **OpenAI**, **Google GenAI (Gemini)**, and **Anthropic (Claude)**.
+*   **Structured Outputs**: Leverages native structured output capabilities of providers (e.g., OpenAI Structured Outputs, Anthropic Beta) when available.
 *   **Iterative Self-Correction**: Automatically detects validation errors and feeds them back to a "Reviewer" model to fix the output.
-*   **Type-Safe**: Built with TypeScript for full type inference and safety.
-*   **Model Agnostic**: Compatible with OpenAI by default, but extensible for other providers.
-*   **Production Ready**: Includes typed errors, extensive validation, and a clean API.
+*   **Type-Safe**: Built with TypeScript and Zod for full type inference and safety.
+*   **Flexible Configuration**: Mix and match different providers for generation and review (e.g., generate with GPT-4o, review with Claude 3.5 Sonnet).
 
 ## Installation
 
 ```bash
-npm install structured-json-agent
+npm install structured-json-agent zod openai @anthropic-ai/sdk @google/genai
 ```
+
+> Note: Install the SDKs for the providers you intend to use.
 
 ## Usage
 
@@ -24,36 +27,47 @@ npm install structured-json-agent
 
 ```typescript
 import { StructuredAgent } from "structured-json-agent";
+import { z } from "zod";
+import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-// Define your Schemas
-const inputSchema = {
-  type: "object",
-  properties: {
-    topic: { type: "string" },
-    depth: { type: "string", enum: ["basic", "advanced"] }
-  },
-  required: ["topic", "depth"]
-};
+// 1. Define your Schemas using Zod
+const inputSchema = z.object({
+  topic: z.string(),
+  depth: z.enum(["basic", "advanced"])
+});
 
-const outputSchema = {
-  type: "object",
-  properties: {
-    title: { type: "string" },
-    keyPoints: { type: "array", items: { type: "string" } },
-    summary: { type: "string" }
-  },
-  required: ["title", "keyPoints", "summary"]
-};
+const outputSchema = z.object({
+  title: z.string(),
+  keyPoints: z.array(z.string()),
+  summary: z.string()
+});
 
-// Initialize the Agent
+// 2. Initialize Provider Instances
+const openAiInstance = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const anthropicInstance = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// 3. Initialize the Agent, you can use the same instance for generator and reviewer
 const agent = new StructuredAgent({
-  openAiApiKey: process.env.OPENAI_API_KEY!,
-  generatorModel: "gpt-4-turbo",
-  reviewerModel: "gpt-3.5-turbo", // Can be a faster/cheaper model for simple fixes
+  // Generator Configuration
+  generator: {
+    llmService: openAiInstance, // Inject the instance directly
+    model: "gpt-5-nano",       // Specify the model
+  },
+  // Reviewer Configuration (Optional but recommended)
+  reviewer: {
+    llmService: anthropicInstance,
+    model: "claude-sonnet-4-5",
+  },
+  // Schemas & Prompt
   inputSchema,
   outputSchema,
   systemPrompt: "You are an expert summarizer. Create a structured summary based on the topic.",
-  maxIterations: 3 // Optional: Max correction attempts (default: 5)
 });
 ```
 
@@ -68,7 +82,7 @@ async function main() {
     });
 
     console.log("Result:", result);
-    // Output is guaranteed to match outputSchema
+    // Result is typed as inferred from outputSchema
   } catch (error) {
     console.error("Agent failed:", error);
   }
@@ -79,47 +93,44 @@ main();
 
 ## How It Works
 
-1.  **Validation**: The input JSON is validated against the `inputSchema`.
-2.  **Generation**: The `generatorModel` creates an initial response based on the system prompt and input.
+1.  **Validation**: The input JSON is validated against the `inputSchema` (Zod).
+2.  **Generation**: The `generator` model creates an initial response based on the system prompt and input.
+    *   If the provider supports native Structured Outputs (like OpenAI or Anthropic), it is used to maximize reliability.
 3.  **Verification Loop**:
     *   The response is parsed and validated against `outputSchema`.
     *   **If Valid**: The result is returned immediately.
-    *   **If Invalid**: The `reviewerModel` is invoked with the invalid JSON, the specific validation errors, and the expected schema. It attempts to fix the JSON.
+    *   **If Invalid**: The `reviewer` model (or generator if no reviewer is set) is invoked with the invalid JSON and specific validation errors. It attempts to fix the output.
 4.  **Convergence**: This cycle repeats until a valid JSON is produced or `maxIterations` is reached.
 
 ## API Reference
 
-### `StructuredAgent` Config
+### `AgentConfig`
+
+Configuration object passed to `new StructuredAgent(config)`.
 
 | Property | Type | Description |
-|Col |Col |Col |
-| `openAiApiKey` | `string` | Your OpenAI API Key. |
-| `generatorModel` | `string` | Model ID for the initial generation (e.g., `gpt-4`). |
-| `reviewerModel` | `string` | Model ID for the review/correction phase. |
-| `inputSchema` | `object` | JSON Schema for validating the input. |
-| `outputSchema` | `object` | JSON Schema for the expected output. |
+| :--- | :--- | :--- |
+| `generator` | `LLMConfig` | Configuration for the generation model. |
+| `reviewer` | `LLMConfig?` | Configuration for the reviewer model (optional). |
+| `inputSchema` | `ZodSchema` | Zod Schema for validating the input. |
+| `outputSchema` | `ZodSchema` | Zod Schema for the expected output. |
 | `systemPrompt` | `string` | Core instructions for the agent. |
 | `maxIterations` | `number?` | Max retries for correction. Default: 5. |
-| `modelConfig` | `ModelConfig?` | Optional parameters (temperature, etc.). |
-| `llmService` | `ILLMService?` | Optional custom LLM service implementation. |
 
-### Error Handling
+### `LLMConfig`
 
-The library exports specific error classes for handling failures:
-
-*   `InvalidInputSchemaError`: Input schema is invalid.
-*   `InvalidOutputSchemaError`: Output schema is invalid.
-*   `SchemaValidationError`: Input data does not match the schema.
-*   `MaxIterationsExceededError`: The agent could not produce valid JSON within the limit.
-*   `LLMExecutionError`: Failure in communicating with the LLM provider.
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `llmService` | `OpenAI \| GoogleGenAI \| Anthropic \| ILLMService` | The provider instance or custom service. |
+| `model` | `string` | Model ID (e.g., `gpt-4o`, `claude-3-5-sonnet`). |
+| `config` | `ModelConfig?` | Optional parameters (temperature, max_tokens, etc.). |
 
 ## Architecture
 
 The project is structured by domain:
 
-*   `src/agent`: Core orchestration logic.
-*   `src/schemas`: Validation logic using AJV.
-*   `src/llm`: Interface and implementation for LLM providers.
+*   `src/agent`: Core orchestration logic (`StructuredAgent`).
+*   `src/schemas`: Validation logic using **Zod**.
+*   `src/llm`: Adapters and Factory for LLM providers (`OpenAI`, `Google`, `Anthropic`).
 *   `src/errors`: Custom error definitions.
 *   `src/types`: Shared interfaces.
-

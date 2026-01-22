@@ -1,6 +1,7 @@
-import { ValidateFunction } from "ajv";
+import { ZodSchema } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { SchemaValidator } from "../schemas/validator.js";
-import { OpenAILLMService, ILLMService, ChatMessage } from "../llm/index.js";
+import { ChatMessage, LLMFactory, ILLMService } from "../llm/index.js";
 import {
   AgentConfig,
 } from "../types/index.js";
@@ -12,19 +13,28 @@ import {
   LLMExecutionError,
 } from "../errors/index.js";
 
+/**
+ * StructuredAgent is a class that implements a structured agent for generating and reviewing JSON outputs.
+ * It uses a language model to generate initial responses and, optionally, a reviewer model to validate and improve those responses.
+ * 
+ * @param config - The configuration object for the agent.
+ */
 export class StructuredAgent {
   private schemaValidator: SchemaValidator;
-  private llmService: ILLMService;
-  private inputValidator: ValidateFunction;
-  private outputValidator: ValidateFunction;
+  private inputValidator: ZodSchema;
+  private outputValidator: ZodSchema;
   private config: AgentConfig;
+  private generatorService: ILLMService;
+  private reviewerService?: ILLMService;
 
+  /**
+   * Creates an instance of StructuredAgent.
+   * 
+   * @param config - The configuration object for the agent.
+   */
   constructor(config: AgentConfig) {
     this.config = config;
     this.schemaValidator = new SchemaValidator();
-    
-    // Use provided LLM service or default to OpenAI
-    this.llmService = config.llmService || new OpenAILLMService(config.openAiApiKey);
 
     try {
       this.inputValidator = this.schemaValidator.compile(config.inputSchema);
@@ -37,24 +47,33 @@ export class StructuredAgent {
     } catch (e) {
       throw new InvalidOutputSchemaError("Failed to compile output schema", e);
     }
+
+    this.generatorService = LLMFactory.create(config.generator.llmService);
+    if (config.reviewer) {
+      this.reviewerService = LLMFactory.create(config.reviewer.llmService);
+    }
   }
 
+  /**
+   * Runs the agent with the given input JSON.
+   * 
+   * @param inputJson - The input JSON to process.
+   * @returns A promise that resolves to the processed JSON.
+   */
   public async run(inputJson: unknown): Promise<unknown> {
-    // 1. Validate Input
+
     try {
       this.schemaValidator.validate(this.inputValidator, inputJson);
     } catch (error) {
       if (error instanceof SchemaValidationError) {
-        // Enhance error message if needed, but the original is good
         throw error;
       }
       throw error;
     }
 
-    const maxIterations = this.config.maxIterations ?? 5;
+    const maxIterations = this.config.maxIterations ?? 1;
     const history: unknown[] = [];
     
-    // 2. Initial Generation
     let currentJson = await this.generateInitialResponse(inputJson);
     history.push({ step: "generation", result: currentJson });
 
@@ -63,7 +82,6 @@ export class StructuredAgent {
       return currentJson;
     }
 
-    // 3. Review Loop
     for (let i = 0; i < maxIterations; i++) {
       try {
         currentJson = await this.reviewResponse(
@@ -78,16 +96,9 @@ export class StructuredAgent {
           return currentJson;
         }
       } catch (error) {
-        // If LLM fails or parsing fails during review, we record it and continue?
-        // Or throw? The requirement says "return exclusively a valid JSON".
-        // If we can't continue, we should probably throw or let the loop hit max iterations.
-        // For now, let's treat execution errors as fatal or part of the attempt?
-        // If it's a parsing error, it's a validation error.
-        // If it's an API error, it's an LLMExecutionError.
         if (error instanceof LLMExecutionError) {
           throw error;
         }
-        // If JSON parse error in reviewResponse, it might be caught there.
       }
     }
 
@@ -109,11 +120,12 @@ export class StructuredAgent {
       },
     ];
 
-    const responseText = await this.llmService.complete(
+    const responseText = await this.generatorService.complete({
       messages,
-      this.config.generatorModel,
-      this.config.modelConfig
-    );
+      model: this.config.generator.model,
+      config: this.config.generator.config,
+      outputFormat: this.outputValidator
+    });
 
     return this.parseJson(responseText);
   }
@@ -123,6 +135,9 @@ export class StructuredAgent {
     errors: string[],
     originalInput: unknown
   ): Promise<unknown> {
+    const reviewerService = this.reviewerService || this.generatorService;
+    const reviewerConfig = this.config.reviewer || this.config.generator;
+
     const messages: ChatMessage[] = [
       {
         role: "system",
@@ -141,17 +156,18 @@ Validation Errors:
 ${errors.join("\n")}
 
 Expected Output Schema:
-${JSON.stringify(this.config.outputSchema)}
+${JSON.stringify(zodToJsonSchema(this.config.outputSchema))}
 
 Please correct the JSON.`,
       },
     ];
 
-    const responseText = await this.llmService.complete(
+    const responseText = await reviewerService.complete({
       messages,
-      this.config.reviewerModel,
-      this.config.modelConfig
-    );
+      model: reviewerConfig.model,
+      config: reviewerConfig.config,
+      outputFormat: this.outputValidator
+    });
 
     return this.parseJson(responseText);
   }
@@ -173,20 +189,17 @@ Please correct the JSON.`,
     try {
       return JSON.parse(text);
     } catch (e) {
-      // If parsing fails, we return the text (as string) or null?
-      // But the flow expects unknown (object).
-      // If we return the text, the schema validation will likely fail (unless schema allows string).
-      // This allows the reviewer to see the malformed JSON text.
       return text; 
     }
   }
 
   private buildSystemPrompt(): string {
+    const jsonSchema = zodToJsonSchema(this.config.outputSchema);
     return `${this.config.systemPrompt}
 
 IMPORTANT: You must output strict JSON only.
 The output must adhere to the following JSON Schema:
-${JSON.stringify(this.config.outputSchema)}
+${JSON.stringify(jsonSchema)}
 `;
   }
 }

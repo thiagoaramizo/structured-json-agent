@@ -1,4 +1,8 @@
+import OpenAI from "openai";
 import { ILLMService } from "../llm/types.js";
+import { GoogleGenAI } from "@google/genai";
+import { ZodSchema } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 
 export interface ModelConfig {
   temperature?: number;
@@ -8,17 +12,19 @@ export interface ModelConfig {
   frequency_penalty?: number;
 }
 
+export interface LLMInputInstance {
+  llmService: OpenAI | GoogleGenAI | Anthropic | ILLMService;
+  model: string;
+  config?: ModelConfig;
+}
+
 export interface AgentConfig {
-  openAiApiKey: string;
-  generatorModel: string;
-  reviewerModel: string;
-  inputSchema: object;
-  outputSchema: object;
+  generator: LLMInputInstance;
+  reviewer?: LLMInputInstance;
+  inputSchema: ZodSchema;
+  outputSchema: ZodSchema;
   systemPrompt: string;
-  modelConfig?: ModelConfig;
   maxIterations?: number;
-  // Optional custom LLM service for testing or other providers
-  llmService?: ILLMService;
 }
 
 export interface AgentRunOptions {

@@ -1,3 +1,4 @@
+import { ZodSchema } from "zod";
 import { ModelConfig } from "../types/index.js";
 
 export interface ChatMessage {
@@ -6,9 +7,10 @@ export interface ChatMessage {
 }
 
 export interface ILLMService {
-  complete(
+  complete(params: {
     messages: ChatMessage[],
     model: string,
     config?: ModelConfig
-  ): Promise<string>;
+    outputFormat?: ZodSchema
+ }): Promise<string>;
 }

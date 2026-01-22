@@ -1,5 +1,6 @@
 import { SchemaValidator } from "./validator.js";
-import { InvalidInputSchemaError, SchemaValidationError } from "../errors/index.js";
+import { SchemaValidationError } from "../errors/index.js";
+import { z } from "zod";
 
 describe("SchemaValidator", () => {
   let validator: SchemaValidator;
@@ -9,33 +10,19 @@ describe("SchemaValidator", () => {
   });
 
   describe("compile", () => {
-    it("should compile a valid schema", () => {
-      const schema = {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-        },
-      };
+    it("should return the passed schema", () => {
+      const schema = z.object({
+        name: z.string(),
+      });
       const validate = validator.compile(schema);
-      expect(typeof validate).toBe("function");
-    });
-
-    it("should throw InvalidInputSchemaError for an invalid schema", () => {
-      const schema = {
-        type: "invalid-type", // Invalid JSON Schema type
-      };
-      expect(() => validator.compile(schema)).toThrow(InvalidInputSchemaError);
+      expect(validate).toBe(schema);
     });
   });
 
   describe("validate", () => {
-    const schema = {
-      type: "object",
-      properties: {
-        age: { type: "number", minimum: 18 },
-      },
-      required: ["age"],
-    };
+    const schema = z.object({
+      age: z.number().min(18),
+    });
     let validateFn: any;
 
     beforeEach(() => {
