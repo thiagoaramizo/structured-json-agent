@@ -22,6 +22,14 @@
     "structured-output",
     "llm"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thiagoaramizo/structured-json-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thiagoaramizo/structured-json-agent/issues"
+  },
+  "homepage": "https://github.com/thiagoaramizo/structured-json-agent#readme",
   "author": "",
   "license": "ISC",
   "devDependencies": {
