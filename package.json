@@ -1,7 +1,7 @@
 {
   "name": "structured-json-agent",
   "version": "1.0.0",
-  "description": "A robust, typed, and extensible library for creating and running Iterative AI Agents that generate structured JSON output.",
+  "description": "A typed and extensible library for creating and running Iterative AI Agents that generate structured JSON output.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,6 +1,6 @@
 # Structured JSON Agent
 
-A robust, typed, and extensible TypeScript library for creating and running Iterative AI Agents that guarantee structured JSON output.
+A typed and extensible TypeScript library for creating and running Iterative AI Agents that guarantee structured JSON output.
 
 This library orchestrates a **Generator ↔ Reviewer** cycle to ensure that the output from Large Language Models (LLMs) strictly adheres to a defined JSON Schema.
 
