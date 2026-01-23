@@ -1,9 +1,9 @@
 import "dotenv/config";
 import OpenAI from "openai";
-import { StructuredAgent } from "../src/agent/index.js";
+
 import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
-import { AgentConfig } from "../dist/index.js";
+import { StructuredAgent } from "../dist/index.js";
 // import Anthropic from "@anthropic-ai/sdk";
 
 const inputSchema = z.object({
@@ -40,14 +40,21 @@ const googleGenAIInstance = new GoogleGenAI({
 //   apiKey: process.env.ANTHROPIC_API_KEY,
 // })
 
-const agentConfig: AgentConfig = {
+const deepSeekInstance = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: "https://api.deepseek.com",
+})
+
+
+
+const agentConfig = {
   generator: {
-    llmService: googleGenAIInstance,
-    model: "gemini-flash-latest",
+    llmService: deepSeekInstance,
+    model: "deepseek-chat",
   },
   reviewer: {
-    llmService: openAiInstance,
-    model: "gpt-5-nano",
+    llmService: googleGenAIInstance,
+    model: "gemini-flash-latest",
   },
   inputSchema,
   outputSchema,

@@ -5,6 +5,7 @@ import { ILLMService } from "./types.js";
 import { OpenAIAdapter } from "./adapters/openai.js";
 import { GoogleGenAIAdapter } from "./adapters/google.js";
 import { AnthropicAdapter } from "./adapters/anthropic.js";
+import { DeepSeekAdapter } from "./adapters/deepseek.js";
 
 export type LLMInstance = OpenAI | GoogleGenAI | Anthropic | ILLMService;
 
@@ -15,6 +16,9 @@ export class LLMFactory {
     }
 
     if (instance instanceof OpenAI) {
+      if (instance.baseURL.includes("deepseek")) {
+        return new DeepSeekAdapter(instance);
+      }
       return new OpenAIAdapter(instance);
     }
 
@@ -26,8 +30,11 @@ export class LLMFactory {
       return new GoogleGenAIAdapter(instance);
     }
 
-    // Fallback check based on properties if instanceof fails (e.g. different versions or mocked)
+    // Fallback check based on properties if instanceof fails
     if (this.isOpenAI(instance)) {
+       if ((instance as any).baseURL?.includes("deepseek")) {
+         return new DeepSeekAdapter(instance as OpenAI);
+       }
        return new OpenAIAdapter(instance as OpenAI);
     }
 
