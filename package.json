@@ -1,7 +1,7 @@
 {
   "name": "structured-json-agent",
   "version": "1.2.1",
-  "description": "A typed and extensible library for creating and running Iterative AI Agents that generate structured JSON output.",
+  "description": "A typed and extensible library for creating, configuring, and running Iterative AI Agents that generate structured JSON output. Includes adapters for OpenAI, Anthropic, Google Gemini, and DeepSeek. Supports custom adapter implementation.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,8 +19,15 @@
     "json",
     "schema",
     "openai",
+    "anthropic",
+    "google",
+    "gemini",
     "structured-output",
-    "llm"
+    "llm",
+    "typescript",
+    "node",
+    "adapter",
+    "self-correct"
   ],
   "repository": {
     "type": "git",

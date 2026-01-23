@@ -1,6 +1,6 @@
 # Structured JSON Agent
 
-A typed and extensible TypeScript library for creating and running Iterative AI Agents that guarantee structured JSON output.
+A typed and extensible library for creating, configuring, and running Iterative AI Agents that generate structured JSON output. Includes adapters for OpenAI, Anthropic, Google Gemini, and DeepSeek. Supports custom adapter implementation.
 
 This library orchestrates a **Generator ↔ Reviewer** cycle to ensure that the output from Large Language Models (LLMs) strictly adheres to a defined Zod Schema.
 
