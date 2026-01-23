@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ZodSchema } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { ILLMService, ChatMessage } from "../types.js";
-import { ModelConfig } from "../../types/index.js";
+import { ILLMService, ChatMessage, ResponseComplete } from "../types.js";
+import { LLMProvider, ModelConfig } from "../../types/index.js";
 import { LLMExecutionError } from "../../errors/index.js";
 
 export class AnthropicAdapter implements ILLMService {
@@ -17,7 +17,7 @@ export class AnthropicAdapter implements ILLMService {
     model: string;
     config?: ModelConfig;
     outputFormat?: ZodSchema;
-  }): Promise<string> {
+  }): Promise<ResponseComplete> {
     try {
       const systemMessage = params.messages.find((m) => m.role === "system");
       const conversationMessages = params.messages
@@ -57,7 +57,18 @@ export class AnthropicAdapter implements ILLMService {
          throw new LLMExecutionError("Received non-text response from Anthropic");
       }
 
-      return content.text;
+      const meta = {
+        provider: LLMProvider.Anthropic,
+        model: params.model,
+        config: params.config,
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+      };
+
+      return {
+        data: content.text,
+        meta,
+      };
     } catch (error) {
       throw new LLMExecutionError("Failed to execute Anthropic request", error);
     }

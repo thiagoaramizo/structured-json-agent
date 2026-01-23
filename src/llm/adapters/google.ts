@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ZodSchema } from "zod";
-import { ILLMService, ChatMessage } from "../types.js";
-import { ModelConfig } from "../../types/index.js";
+import { ILLMService, ChatMessage, ResponseComplete } from "../types.js";
+import { LLMProvider, ModelConfig } from "../../types/index.js";
 import { LLMExecutionError } from "../../errors/index.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
@@ -17,7 +17,7 @@ export class GoogleGenAIAdapter implements ILLMService {
     model: string;
     config?: ModelConfig;
     outputFormat?: ZodSchema;
-  }): Promise<string> {
+  }): Promise<ResponseComplete> {
     try {
       // Extract system instruction if present
       const systemMessage = params.messages.find((m) => m.role === "system");
@@ -52,15 +52,32 @@ export class GoogleGenAIAdapter implements ILLMService {
 
       const text = result.text || result.candidates?.[0]?.content?.parts?.[0]?.text;
 
+      const meta = {
+        provider: LLMProvider.GoogleGenAI,
+        model: params.model,
+        config: params.config,
+        inputTokens: result.usageMetadata?.promptTokenCount,
+        outputTokens: result.usageMetadata?.candidatesTokenCount,
+      };
+
+
       if (!text) {
          if (result.candidates && result.candidates.length > 0) {
             const part = result.candidates[0].content?.parts?.[0];
-            if (part && 'text' in part) return part.text as string;
+            if (part && 'text' in part) {
+              return {
+                data: part.text as string,
+                meta,
+              }
+            }
          }
          throw new LLMExecutionError("Received empty response from Google GenAI");
       }
 
-      return text;
+      return {
+        data: text,
+        meta,
+      };
     } catch (error) {
       throw new LLMExecutionError("Failed to execute Google GenAI request", error);
     }

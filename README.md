@@ -7,7 +7,7 @@ This library orchestrates a **Generator ↔ Reviewer** cycle to ensure that the 
 ## Features
 
 *   **Guaranteed JSON Output**: Enforces strict adherence to Zod Schemas.
-*   **Multi-Provider Support**: Built-in adapters for **OpenAI**, **Google GenAI (Gemini)**, and **Anthropic (Claude)**.
+*   **Multi-Provider Support**: Built-in adapters for **OpenAI**, **Google GenAI (Gemini)**, **Anthropic (Claude)**, and **DeepSeek**.
 *   **Structured Outputs**: Leverages native structured output capabilities of providers (e.g., OpenAI Structured Outputs, Anthropic Beta) when available.
 *   **Iterative Self-Correction**: Automatically detects validation errors and feeds them back to a "Reviewer" model to fix the output.
 *   **Type-Safe**: Built with TypeScript and Zod for full type inference and safety.
@@ -73,15 +73,21 @@ const agent = new StructuredAgent({
 
 ### 2. Run the Agent
 
+To run the agent, use the `run` method with your input data. Optionally, provide a reference (string or number) identifier for tracking in the second parameter.
+
 ```typescript
 async function main() {
   try {
     const result = await agent.run({
       topic: "Clean Architecture",
       depth: "advanced"
-    });
+    }, "12345"); // Optional reference for tracking
 
-    console.log("Result:", result);
+    console.log("Output:", result.output);
+    console.log("Metadata:", result.metadata);
+    // Metadata includes provider, model, and iteration count
+    console.log("Reference:", result.ref);
+
     // Result is typed as inferred from outputSchema
   } catch (error) {
     console.error("Agent failed:", error);
@@ -89,6 +95,35 @@ async function main() {
 }
 
 main();
+```
+
+In TypeScript, you can use the `run<T>` method to get a typed result.
+
+```typescript
+const result = await agent.run<T>({
+  topic: "Clean Architecture",
+  depth: "advanced"
+}, "12345");
+```
+
+The result object is of type `AgentResult<T>`, where `T` is the type inferred from `outputSchema`.
+
+```typescript
+type AgentResult<T> = {
+  output: T; // Output as per outputSchema
+  metadata: {
+    provider: string; // e.g., "openai", "deepseek"
+    model: string; // e.g., "gpt-4o", "claude-3-5-sonnet"
+    inputTokens: number; // Number of tokens in the input
+    outputTokens: number; // Number of tokens in the output
+    step: string; // Step description ("generation", "review-1", "review-2", etc.)
+    validation: {
+      valid: boolean; // Whether the output is valid against outputSchema
+      errors?: string[]; // Validation errors if any
+    }
+  }[];
+  ref?: string | number; // Optional reference provided for tracking
+};
 ```
 
 ## How It Works
@@ -121,7 +156,7 @@ Configuration object passed to `new StructuredAgent(config)`.
 
 | Property | Type | Description |
 | :--- | :--- | :--- |
-| `llmService` | `OpenAI \| GoogleGenAI \| Anthropic \| ILLMService` | The provider instance or custom service. |
+| `llmService` | `OpenAI \| GoogleGenAI \| Anthropic \| ILLMService` | The provider instance or custom service. Supports DeepSeek via OpenAI SDK. |
 | `model` | `string` | Model ID (e.g., `gpt-4o`, `claude-3-5-sonnet`). |
 | `config` | `ModelConfig?` | Optional parameters (temperature, max_tokens, etc.). |
 

@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { ZodSchema } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { ILLMService, ChatMessage } from "../types.js";
-import { ModelConfig } from "../../types/index.js";
+import { ILLMService, ChatMessage, ResponseComplete } from "../types.js";
+import { LLMProvider, ModelConfig } from "../../types/index.js";
 import { LLMExecutionError } from "../../errors/index.js";
 import { ChatCompletionCreateParams } from "openai/resources.mjs";
 
@@ -18,7 +18,7 @@ export class DeepSeekAdapter implements ILLMService {
     model: string;
     config?: ModelConfig;
     outputFormat?: ZodSchema;
-  }): Promise<string> {
+  }): Promise<ResponseComplete> {
     try {
       let messages = [...params.messages];
 
@@ -66,7 +66,18 @@ export class DeepSeekAdapter implements ILLMService {
         throw new LLMExecutionError("Received empty response from DeepSeek");
       }
 
-      return content;
+      const meta = {
+        provider: LLMProvider.Deepseek,
+        model: params.model,
+        config: params.config,
+        inputTokens: response.usage?.prompt_tokens,
+        outputTokens: response.usage?.completion_tokens,
+      };
+
+      return {
+        data: content,
+        meta,
+      };
     } catch (error) {
       if (error instanceof LLMExecutionError) {
         throw error;

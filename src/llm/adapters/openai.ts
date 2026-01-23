@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ZodSchema } from "zod";
-import { ILLMService, ChatMessage } from "../types.js";
-import { ModelConfig } from "../../types/index.js";
+import { ILLMService, ChatMessage, ResponseComplete } from "../types.js";
+import { LLMProvider, ModelConfig } from "../../types/index.js";
 import { LLMExecutionError } from "../../errors/index.js";
 import { ChatCompletionCreateParams } from "openai/resources.mjs";
 
@@ -18,7 +18,7 @@ export class OpenAIAdapter implements ILLMService {
     model: string;
     config?: ModelConfig;
     outputFormat?: ZodSchema;
-  }): Promise<string> {
+  }): Promise<ResponseComplete> {
     try {
       const createParams: ChatCompletionCreateParams = {
         messages: params.messages,
@@ -48,7 +48,18 @@ export class OpenAIAdapter implements ILLMService {
         throw new LLMExecutionError("Received empty response from LLM");
       }
 
-      return content;
+      const meta = {
+        provider: LLMProvider.OpenAI,
+        model: params.model,
+        config: params.config,
+        inputTokens: response.usage?.prompt_tokens,
+        outputTokens: response.usage?.completion_tokens,
+      };
+
+      return {
+        data: content,
+        meta,
+      };
     } catch (error) {
       if (error instanceof LLMExecutionError) {
         throw error;

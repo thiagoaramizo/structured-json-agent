@@ -1,6 +1,6 @@
 import { StructuredAgent } from "./index.js";
-import { ILLMService, ChatMessage } from "../llm/types.js";
-import { ModelConfig } from "../types/index.js";
+import { ILLMService, ChatMessage, ResponseComplete } from "../llm/types.js";
+import { ModelConfig, AgentResult } from "../types/index.js";
 import { MaxIterationsExceededError } from "../errors/index.js";
 import { z } from "zod";
 
@@ -17,10 +17,16 @@ class MockLLMService implements ILLMService {
     messages: ChatMessage[];
     model: string;
     config?: ModelConfig;
-  }): Promise<string> {
+  }): Promise<ResponseComplete> {
     const response = this.responses[this.callCount];
     this.callCount++;
-    return response || "{}";
+    return {
+      data: response || "{}",
+      meta: {
+        provider: "mock",
+        model: params.model,
+      },
+    };
   }
 
   getCallCount() {
@@ -56,8 +62,26 @@ describe("StructuredAgent", () => {
     });
 
     const result = await agent.run({ input: "test" });
-    expect(result).toEqual({ result: "success" });
+    expect(result.output).toEqual({ result: "success" });
     expect(mockLLM.getCallCount()).toBe(1);
+  });
+
+  it("should pass through the optional ref parameter", async () => {
+    const validJson = JSON.stringify({ result: "success" });
+    const mockLLM = new MockLLMService([validJson]);
+
+    const agent = new StructuredAgent({
+      ...baseConfig,
+      generator: {
+        llmService: mockLLM,
+        model: "gpt-test",
+      },
+    });
+
+    const ref = "test-ref-123";
+    const result = await agent.run({ input: "test" }, ref);
+    expect(result.output).toEqual({ result: "success" });
+    expect(result.ref).toBe(ref);
   });
 
   it("should retry and succeed when initial response is invalid", async () => {
@@ -78,7 +102,7 @@ describe("StructuredAgent", () => {
     });
 
     const result = await agent.run({ input: "test" });
-    expect(result).toEqual({ result: "fixed" });
+    expect(result.output).toEqual({ result: "fixed" });
     expect(mockLLM.getCallCount()).toBe(2); // 1 generation + 1 review
   });
 
@@ -124,7 +148,7 @@ describe("StructuredAgent", () => {
     });
 
     const result = await agent.run({ input: "test" });
-    expect(result).toEqual({ result: "recovered" });
+    expect(result.output).toEqual({ result: "recovered" });
     expect(mockLLM.getCallCount()).toBe(2);
   });
 });

@@ -66,7 +66,8 @@ async function main() {
     console.log("Starting agents...");
     const agent = new StructuredAgent(agentConfig)
     const result = await agent.run({ noticia })
-    console.log("Result:", JSON.stringify(result, null, 2))
+    console.log("Output:", JSON.stringify(result.output, null, 2))
+    console.log("Metadata:", JSON.stringify(result.metadata, null, 2))
   } catch (error) {
     console.error("Error executing agent:", error)
   }

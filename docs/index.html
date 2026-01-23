@@ -369,6 +369,16 @@
             </div>
         </header>
 
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>
+                Structured JSON Agent provides a safe and unified interface for working with various Large Language Models (LLMs), ensuring structured JSON responses every time. It abstracts the complexity of different providers, making it incredibly easy to test, swap, and compare models like OpenAI, Google Gemini, Anthropic Claude, and DeepSeek without changing your core logic.
+            </p>
+            <p>
+                Under the hood, it leverages native structured output capabilities where available—such as OpenAI's Structured Outputs, Google GenAI's JSON mode, and Anthropic's experimental features. For models that don't natively support strict JSON schemas, the library offers a robust fallback: simply configure a <strong>Reviewer</strong>. The agent will automatically detect validation errors and engage the reviewer model to correct the output, guaranteeing type safety and reliability across any provider.
+            </p>
+        </section>
+
         <section id="features">
             <div class="feature-grid">
                 <div class="feature-card">
@@ -377,7 +387,7 @@
                 </div>
                 <div class="feature-card">
                     <h3>Multi-Provider Support</h3>
-                    <p>Built-in adapters for OpenAI, Google GenAI (Gemini), and Anthropic (Claude).</p>
+                    <p>Built-in adapters for OpenAI, Google GenAI (Gemini), Anthropic (Claude), and DeepSeek.</p>
                 </div>
                 <div class="feature-card">
                     <h3>Structured Outputs</h3>
@@ -411,9 +421,9 @@
             <p>To create a schema, you need to install <a href="https://www.npmjs.com/package/zod" target="_blank">zod</a>:</p>
             <pre><code class="language-bash">npm install zod</code></pre>
 
-            <p>You need inject a LLM service instance to the agent. You can use <a href="https://www.npmjs.com/package/openai" target="_blank">openai</a>, <a href="https://www.npmjs.com/package/@anthropic-ai/sdk" target="_blank">@anthropic-ai/sdk</a>, or <a href="https://www.npmjs.com/package/@google/genai" target="_blank">@google/genai</a>. Each package has its own installation instructions.</p>
+            <p>You need to inject a LLM service instance to the agent. You can use <a href="https://www.npmjs.com/package/openai" target="_blank">openai</a>, <a href="https://www.npmjs.com/package/@anthropic-ai/sdk" target="_blank">@anthropic-ai/sdk</a>, or <a href="https://www.npmjs.com/package/@google/genai" target="_blank">@google/genai</a>. Each package has its own installation instructions.</p>
 
-            <p><em>Note: The OpenAI instance can work with others providers, like Deepseek, you can use it by passing the url while initializing the instance.</em></p>
+            <p><em>Note: The OpenAI instance can work with other providers, like Deepseek, you can use it by passing the url while initializing the instance.</em></p>
 
             <p>The lib provides an adapter for each provider (OpenAI, Anthropic, Google Gemini). You can implement your own LLM service by following the interface <code>LLMService</code> from the library.</p>
         </section>
@@ -471,7 +481,8 @@ const myAgent = new StructuredAgent({
   // Schemas & Prompt
   inputSchema,
   outputSchema,
-  systemPrompt: "You are an expert summarizer. Create a structured summary based on the topic.",
+  systemPrompt: `You are an expert summarizer. 
+  Create a structured summary based on the topic.`,
 });</code></pre>
 
             <h3>4. Run the Agent</h3>
@@ -484,14 +495,54 @@ const myAgent = new StructuredAgent({
       depth: "advanced"
     });
 
-    console.log("Result:", result);
-    // Result is typed as inferred from outputSchema
+    console.log("Result:", result.output); // Result is typed as 
+    // inferred from outputSchema
+    
+    console.log("Metadata:", result.metadata); // Metadata is a array of 
+    // objects, each one with the provider, model, input
+    // tokens, output tokens, steps and validation.
+    
   } catch (error) {
     console.error("Agent failed:", error);
   }
 }
 
 main();</code></pre>
+
+<p>You can also pass a reference to the agent run, which will be included in the metadata.</p>
+
+            <pre><code class="language-typescript">async function main() {
+  try {
+    const result = await myAgent.run({
+      topic: "Clean Architecture",
+      depth: "advanced"
+    }, "my-ref-123"); // Pass a reference to the agent run
+
+    console.log("Result:", result.output);
+    console.log("Metadata:", result.metadata);
+    console.log("Ref:", result.ref); // Ref is "my-ref-123"
+  } catch (error) {
+    console.error("Agent failed:", error);
+  }
+}
+
+main();
+</code></pre>
+
+<p>In Typescript, you can include the <code>run< T >()</code> method, where <code>T</code> is the type of the output schema.</p>
+<p>The <code>AgentResult</code> type is defined as:</p>
+
+            <pre><code class="language-typescript">export interface AgentResult<T = unknown> {
+  output: T;
+  metadata: MetadataAgentResult[];
+  ref?: string | number;
+}
+</code></pre>
+
+
+
+
+
         </section>
 
         <section id="api">
@@ -545,6 +596,7 @@ main();</code></pre>
             </div>
 
             <h3>LLMConfig</h3>
+            <p>Configuration object for LLM models.</p>
             <div class="table-container">
                 <table>
                     <thead>
@@ -574,23 +626,7 @@ main();</code></pre>
                 </table>
             </div>
 
-            <h3>ILLMService</h3>
-            <p>Interface for implementing custom LLM adapters.</p>
-            <pre><code class="language-typescript">interface ILLMService {
-  complete(params: {
-    messages: ChatMessage[];
-    model: string;
-    config?: ModelConfig;
-    outputFormat?: ZodSchema;
-  }): Promise<string>;
-}
-
-interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}</code></pre>
-
-            <h3>ModelConfig</h3>
+                        <h3>ModelConfig</h3>
             <p>Configuration options for fine-tuning the model's behavior.</p>
             <div class="table-container">
                 <table>
@@ -630,6 +666,132 @@ interface ChatMessage {
                     </tbody>
                 </table>
             </div>
+
+            <h3>AgentResult</h3>
+            <p>Interface for the result of an agent run.</p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>output</code></td>
+                            <td><code>T</code></td>
+                            <td>The parsed output of the agent run.</td>
+                        </tr>
+                        <tr>
+                            <td><code>metadata</code></td>
+                            <td><code>MetadataAgentResult[]</code></td>
+                            <td>Array of metadata records.</td>
+                        </tr>
+                        <tr>
+                            <td><code>ref</code></td>
+                            <td><code>string | number?</code></td>
+                            <td>Optional reference ID for tracking.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>MetadataAgentResult</h3>
+            <p>Interface of metadata records on the agent result.</p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>provider</code></td>
+                            <td><code>string</code></td>
+                            <td>The name of the provider (e.g., <code>openai</code>).</td>
+                        </tr>
+                        <tr>
+                            <td><code>model</code></td>
+                            <td><code>string</code></td>
+                            <td>The name of the model used (e.g., <code>gpt-5-nano</code>).</td>
+                        </tr>
+                        <tr>
+                            <td><code>inputTokens?</code></td>
+                            <td><code>number</code></td>
+                            <td>Number of tokens in the input prompt.</td>
+                        </tr>
+                        <tr>
+                            <td><code>outputTokens?</code></td>
+                            <td><code>number</code></td>
+                            <td>Number of tokens in the output.</td>
+                        </tr>
+                        <tr>
+                            <td><code>step</code></td>
+                            <td><code>string</code></td>
+                            <td>The name of the step (e.g., <code>generation</code>, <code>review-1</code>, <code>review-2</code>).</td>
+                        </tr>
+                        <tr>
+                            <td><code>validation?</code></td>
+                            <td><code>ValidationResult</code></td>
+                            <td>Validation result for the output.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            </section>
+
+            <section id="implment">
+            <h2>Implementing Custom LLM Adapters</h2>
+
+
+            <h3>ILLMService</h3>
+            <p>Interface for implementing custom LLM adapters, if you want to use a different provider.</p>
+            <pre><code class="language-typescript">interface ILLMService {
+  complete(params: {
+    messages: ChatMessage[];
+    model: string;
+    config?: ModelConfig;
+    outputFormat?: ZodSchema;
+  }): Promise< ResponseComplete >;
+}
+
+interface ResponseComplete {
+  data: string;
+  meta?: {
+    provider: string;
+    model: string;
+    inputTokens?: number;
+    outputTokens?: number;
+  };
+}
+
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}</code></pre>
+
+<p>Just use in the agent configuration:</p>
+
+            <pre><code class="language-typescript">import { StructuredAgent } from "structured-json-agent";
+import MyCustomProvider from "./my-custom-provider";
+
+const myAgent = new StructuredAgent({
+  generator: { 
+    llmService: MyCustomProvider, // Instance of your custom provider
+    model: "gpt-4o-mini",
+  },
+  inputSchema,
+  outputSchema,
+  systemPrompt: "...",
+});</code></pre>
+
+
         </section>
 
         <section id="contribute" style="text-align: center; margin-top: 4rem; padding: 3rem 0; border-top: 1px solid var(--border-subtle);">
