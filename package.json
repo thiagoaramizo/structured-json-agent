@@ -1,6 +1,6 @@
 {
   "name": "structured-json-agent",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A typed and extensible library for creating and running Iterative AI Agents that generate structured JSON output.",
   "type": "module",
   "main": "./dist/index.js",
@@ -29,7 +29,7 @@
   "bugs": {
     "url": "https://github.com/thiagoaramizo/structured-json-agent/issues"
   },
-  "homepage": "https://thiagoaramizo.github.io/structured-json-agent",
+  "homepage": "https://structured-json-agent.com/",
   "author": "",
   "license": "ISC",
   "devDependencies": {
